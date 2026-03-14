@@ -57,10 +57,10 @@ class DriftConfig(BaseModel):
 class SplitSizes(BaseModel):
     """Number of instances per split."""
 
-    train: int = 200
-    dev: int = 50
-    public_test: int = 100
-    private_test: int = 100
+    train: int = 1000
+    dev: int = 200
+    public_test: int = 200
+    private_test: int = 200
 
 
 class Spec(BaseModel):

@@ -13,7 +13,7 @@ SUITE_DIR="${1:-./artifacts/v1_clustered}"
 # Build if not present
 if [ ! -d "$SUITE_DIR" ]; then
     echo "=== Suite not found — building v1_clustered ==="
-    python -m continual_benchmark.cli build-suite \
+    uv run continual-benchmark build-suite \
         --suite v1 \
         --stream v1_clustered \
         --seed 42 \
@@ -25,7 +25,7 @@ METRICS_DIR="./artifacts/dummy_metrics"
 mkdir -p "$PRED_DIR" "$METRICS_DIR"
 
 echo "=== Running dummy baseline (copies gold targets as predictions) ==="
-python -c "
+uv run python -c "
 from continual_benchmark.baselines.sequential_ft.runner import run_sequential_ft, DummyTrainer
 from pathlib import Path
 
@@ -46,7 +46,7 @@ echo "=== Scoring predictions ==="
 for pred_file in "$PRED_DIR"/stage_*/predictions.jsonl; do
     stage_num=$(basename "$(dirname "$pred_file")" | sed 's/stage_//')
     echo "Scoring stage $stage_num..."
-    python -m continual_benchmark.cli score \
+    uv run continual-benchmark score \
         --gold "$SUITE_DIR" \
         --pred "$pred_file" \
         --out "$METRICS_DIR/stage_${stage_num}_scores.json" 2>/dev/null || true

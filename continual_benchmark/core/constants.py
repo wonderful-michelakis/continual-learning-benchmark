@@ -40,10 +40,10 @@ class Track(str, Enum):
 
 # Default split sizes per stage
 DEFAULT_SPLIT_SIZES: dict[Split, int] = {
-    Split.TRAIN: 200,
-    Split.DEV: 50,
-    Split.PUBLIC_TEST: 100,
-    Split.PRIVATE_TEST: 100,
+    Split.TRAIN: 1000,
+    Split.DEV: 200,
+    Split.PUBLIC_TEST: 200,
+    Split.PRIVATE_TEST: 200,
 }
 
 # Seed offsets for deterministic split generation

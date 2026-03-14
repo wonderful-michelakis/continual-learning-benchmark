@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build the v1_clustered benchmark suite (12 stages, ~2400 instances).
+# Build the v1_clustered benchmark suite (12 stages, ~19,200 instances).
 #
 # Usage:
 #   bash examples/build_v1.sh [OUTPUT_DIR]
@@ -11,7 +11,7 @@ set -euo pipefail
 OUT_DIR="${1:-./artifacts/v1_clustered}"
 
 echo "=== Building v1_clustered suite ==="
-python -m continual_benchmark.cli build-suite \
+uv run continual-benchmark build-suite \
     --suite v1 \
     --stream v1_clustered \
     --seed 42 \
@@ -19,12 +19,12 @@ python -m continual_benchmark.cli build-suite \
 
 echo ""
 echo "=== Running QA checks ==="
-python -m continual_benchmark.cli qa-suite --path "$OUT_DIR"
+uv run continual-benchmark qa-suite --path "$OUT_DIR"
 
 echo ""
 echo "=== Inspecting stage 1 ==="
-python -m continual_benchmark.cli inspect-stage --path "$OUT_DIR" --stage 1
+uv run continual-benchmark inspect-stage --path "$OUT_DIR" --stage 1
 
 echo ""
 echo "Suite built at: $OUT_DIR"
-echo "To list available streams: python -m continual_benchmark.cli list-streams"
+echo "To list available streams: uv run continual-benchmark list-streams"

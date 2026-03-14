@@ -73,9 +73,23 @@ def _get_query_templates(
     else:
         salary_threshold = 100000
 
+    # Pick a second department for cross-department queries
+    other_depts = [d for d in depts if d["dept_id"] != dept_id]
+    dept2 = rng.choice(other_depts) if other_depts else dept
+    dept2_name = dept2["dept_name"]
+
+    # Salary percentiles for varied thresholds
+    salary_label = salary_col.replace('_', ' ')
+    if salaries:
+        low_threshold = sorted(salaries)[len(salaries) // 4]
+        high_threshold = sorted(salaries)[3 * len(salaries) // 4]
+    else:
+        low_threshold = 70000
+        high_threshold = 150000
+
     if "select" in query_types:
         templates.append(QueryTemplate(
-            question=f"What are the names of all employees?",
+            question="What are the names of all employees?",
             sql=f"SELECT {name_col} FROM employees ORDER BY {name_col}",
             result_format="list",
         ))
@@ -89,10 +103,30 @@ def _get_query_templates(
             ),
             result_format="list",
         ))
+        templates.append(QueryTemplate(
+            question="How many employees are there in total?",
+            sql=f"SELECT COUNT(*) as total FROM employees",
+            result_format="scalar",
+        ))
+        templates.append(QueryTemplate(
+            question="List all department names.",
+            sql="SELECT dept_name FROM departments ORDER BY dept_name",
+            result_format="list",
+        ))
+        templates.append(QueryTemplate(
+            question=f"What are the names of employees NOT in the {dept_name} department?",
+            sql=(
+                f"SELECT e.{name_col} FROM employees e "
+                f"JOIN departments d ON e.{dept_fk} = d.dept_id "
+                f"WHERE d.dept_name != '{dept_name}' "
+                f"ORDER BY e.{name_col}"
+            ),
+            result_format="list",
+        ))
 
     if "filter" in query_types:
         templates.append(QueryTemplate(
-            question=f"What are the names of employees with {salary_col.replace('_', ' ')} >= {salary_threshold}?",
+            question=f"What are the names of employees with {salary_label} >= {salary_threshold}?",
             sql=(
                 f"SELECT {name_col} FROM employees "
                 f"WHERE {salary_col} >= {salary_threshold} "
@@ -103,7 +137,7 @@ def _get_query_templates(
         templates.append(QueryTemplate(
             question=(
                 f"What are the names of employees in {dept_name} "
-                f"with {salary_col.replace('_', ' ')} >= {salary_threshold}?"
+                f"with {salary_label} >= {salary_threshold}?"
             ),
             sql=(
                 f"SELECT e.{name_col} FROM employees e "
@@ -113,8 +147,42 @@ def _get_query_templates(
             ),
             result_format="list",
         ))
+        templates.append(QueryTemplate(
+            question=f"Which employees have {salary_label} between {low_threshold} and {high_threshold}?",
+            sql=(
+                f"SELECT {name_col} FROM employees "
+                f"WHERE {salary_col} >= {low_threshold} AND {salary_col} <= {high_threshold} "
+                f"ORDER BY {name_col}"
+            ),
+            result_format="list",
+        ))
+        templates.append(QueryTemplate(
+            question=f"Who has the lowest {salary_label}?",
+            sql=(
+                f"SELECT {name_col} FROM employees "
+                f"ORDER BY {salary_col} ASC LIMIT 1"
+            ),
+            result_format="list",
+        ))
+        templates.append(QueryTemplate(
+            question=f"Who has the highest {salary_label}?",
+            sql=(
+                f"SELECT {name_col} FROM employees "
+                f"ORDER BY {salary_col} DESC LIMIT 1"
+            ),
+            result_format="list",
+        ))
+        templates.append(QueryTemplate(
+            question=f"List employees with {salary_label} below {low_threshold}, sorted by {salary_label}.",
+            sql=(
+                f"SELECT {name_col}, {salary_col} FROM employees "
+                f"WHERE {salary_col} < {low_threshold} "
+                f"ORDER BY {salary_col}"
+            ),
+            result_format="table",
+        ))
 
-    if "join" in query_types and "projects" in db.data:
+    if "join" in query_types:
         templates.append(QueryTemplate(
             question="For each department, list the department name and number of employees.",
             sql=(
@@ -124,15 +192,47 @@ def _get_query_templates(
             ),
             result_format="table",
         ))
+        if "projects" in db.data:
+            templates.append(QueryTemplate(
+                question="List all projects and their department names.",
+                sql=(
+                    "SELECT p.proj_name, d.dept_name "
+                    "FROM projects p JOIN departments d ON p.dept_id = d.dept_id "
+                    "ORDER BY p.proj_name"
+                ),
+                result_format="table",
+            ))
+            templates.append(QueryTemplate(
+                question=f"Which projects belong to the {dept_name} department?",
+                sql=(
+                    "SELECT p.proj_name FROM projects p "
+                    "JOIN departments d ON p.dept_id = d.dept_id "
+                    f"WHERE d.dept_name = '{dept_name}' "
+                    "ORDER BY p.proj_name"
+                ),
+                result_format="list",
+            ))
+        if "assignments" in db.data:
+            templates.append(QueryTemplate(
+                question="Which employees are assigned to projects? List their names and project names.",
+                sql=(
+                    f"SELECT e.{name_col}, p.proj_name "
+                    f"FROM assignments a "
+                    f"JOIN employees e ON a.emp_id = e.{emp_id_col} "
+                    f"JOIN projects p ON a.proj_id = p.proj_id "
+                    f"ORDER BY e.{name_col}"
+                ),
+                result_format="table",
+            ))
 
     if "aggregate" in query_types:
         templates.append(QueryTemplate(
-            question=f"What is the average {salary_col.replace('_', ' ')} across all employees?",
+            question=f"What is the average {salary_label} across all employees?",
             sql=f"SELECT ROUND(AVG({salary_col}), 2) as average FROM employees",
             result_format="scalar",
         ))
         templates.append(QueryTemplate(
-            question=f"What is the highest {salary_col.replace('_', ' ')} in each department?",
+            question=f"What is the highest {salary_label} in each department?",
             sql=(
                 f"SELECT d.dept_name, MAX(e.{salary_col}) as max_salary "
                 f"FROM employees e JOIN departments d ON e.{dept_fk} = d.dept_id "
@@ -140,16 +240,95 @@ def _get_query_templates(
             ),
             result_format="table",
         ))
+        templates.append(QueryTemplate(
+            question=f"What is the total {salary_label} per department?",
+            sql=(
+                f"SELECT d.dept_name, SUM(e.{salary_col}) as total_salary "
+                f"FROM employees e JOIN departments d ON e.{dept_fk} = d.dept_id "
+                f"GROUP BY d.dept_name ORDER BY d.dept_name"
+            ),
+            result_format="table",
+        ))
+        templates.append(QueryTemplate(
+            question="How many employees are in each department?",
+            sql=(
+                f"SELECT d.dept_name, COUNT(*) as emp_count "
+                f"FROM employees e JOIN departments d ON e.{dept_fk} = d.dept_id "
+                f"GROUP BY d.dept_name ORDER BY emp_count DESC"
+            ),
+            result_format="table",
+        ))
+        templates.append(QueryTemplate(
+            question=f"What is the minimum {salary_label} in the {dept2_name} department?",
+            sql=(
+                f"SELECT MIN(e.{salary_col}) as min_salary "
+                f"FROM employees e JOIN departments d ON e.{dept_fk} = d.dept_id "
+                f"WHERE d.dept_name = '{dept2_name}'"
+            ),
+            result_format="scalar",
+        ))
+        templates.append(QueryTemplate(
+            question="Which department has the most employees?",
+            sql=(
+                f"SELECT d.dept_name FROM employees e "
+                f"JOIN departments d ON e.{dept_fk} = d.dept_id "
+                f"GROUP BY d.dept_name ORDER BY COUNT(*) DESC LIMIT 1"
+            ),
+            result_format="list",
+        ))
+        if "projects" in db.data:
+            templates.append(QueryTemplate(
+                question="What is the total budget across all projects?",
+                sql="SELECT SUM(budget) as total_budget FROM projects",
+                result_format="scalar",
+            ))
+            templates.append(QueryTemplate(
+                question="Which project has the highest budget?",
+                sql="SELECT proj_name FROM projects ORDER BY budget DESC LIMIT 1",
+                result_format="list",
+            ))
 
     if "subquery" in query_types:
         templates.append(QueryTemplate(
-            question=(
-                f"Which employees earn more than the average {salary_col.replace('_', ' ')}?"
-            ),
+            question=f"Which employees earn more than the average {salary_label}?",
             sql=(
                 f"SELECT {name_col} FROM employees "
                 f"WHERE {salary_col} > (SELECT AVG({salary_col}) FROM employees) "
                 f"ORDER BY {name_col}"
+            ),
+            result_format="list",
+        ))
+        templates.append(QueryTemplate(
+            question=f"Which employees earn less than the average {salary_label}?",
+            sql=(
+                f"SELECT {name_col} FROM employees "
+                f"WHERE {salary_col} < (SELECT AVG({salary_col}) FROM employees) "
+                f"ORDER BY {name_col}"
+            ),
+            result_format="list",
+        ))
+        templates.append(QueryTemplate(
+            question=(
+                f"Which departments have average {salary_label} above "
+                f"the overall average {salary_label}?"
+            ),
+            sql=(
+                f"SELECT d.dept_name FROM employees e "
+                f"JOIN departments d ON e.{dept_fk} = d.dept_id "
+                f"GROUP BY d.dept_name "
+                f"HAVING AVG(e.{salary_col}) > (SELECT AVG({salary_col}) FROM employees) "
+                f"ORDER BY d.dept_name"
+            ),
+            result_format="list",
+        ))
+        templates.append(QueryTemplate(
+            question=f"Who earns the most in the {dept_name} department?",
+            sql=(
+                f"SELECT {name_col} FROM employees "
+                f"WHERE {salary_col} = ("
+                f"SELECT MAX(e2.{salary_col}) FROM employees e2 "
+                f"JOIN departments d ON e2.{dept_fk} = d.dept_id "
+                f"WHERE d.dept_name = '{dept_name}')"
             ),
             result_format="list",
         ))

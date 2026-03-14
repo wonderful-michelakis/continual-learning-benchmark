@@ -23,10 +23,10 @@ stages:
     drift:
       drift_type: none
     split_sizes:
-      train: 200
-      dev: 50
-      public_test: 100
-      private_test: 100
+      train: 1000
+      dev: 200
+      public_test: 200
+      private_test: 200
     generator_config:
       operators: [ADD, SUB, MUL]
     metadata:
@@ -47,10 +47,10 @@ stages:
       drift_description: "Adds CLIP and NEG operators"
       drift_intensity: 0.3
     split_sizes:
-      train: 200
-      dev: 50
-      public_test: 100
-      private_test: 100
+      train: 1000
+      dev: 200
+      public_test: 200
+      private_test: 200
     generator_config:
       operators: [ADD, SUB, MUL, CLIP, NEG]
     metadata:
@@ -71,10 +71,10 @@ stages:
       drift_description: "ADD now returns x + y + 1 (offset drift)"
       drift_intensity: 0.5
     split_sizes:
-      train: 200
-      dev: 50
-      public_test: 100
-      private_test: 100
+      train: 1000
+      dev: 200
+      public_test: 200
+      private_test: 200
     generator_config:
       operators: [ADD, SUB, MUL, CLIP, NEG, MAX, MIN]
       semantic_overrides:
@@ -94,10 +94,10 @@ stages:
     drift:
       drift_type: none
     split_sizes:
-      train: 200
-      dev: 50
-      public_test: 100
-      private_test: 100
+      train: 1000
+      dev: 200
+      public_test: 200
+      private_test: 200
     generator_config:
       rule_types: [rename_field, remove_field, add_computed_field]
     metadata:
@@ -117,10 +117,10 @@ stages:
       drift_description: "Adds nested operations and list filtering"
       drift_intensity: 0.3
     split_sizes:
-      train: 200
-      dev: 50
-      public_test: 100
-      private_test: 100
+      train: 1000
+      dev: 200
+      public_test: 200
+      private_test: 200
     generator_config:
       rule_types: [rename_field, remove_field, add_computed_field, filter_list, flatten_nested]
     metadata:
@@ -140,10 +140,10 @@ stages:
       drift_description: "Schema structure changes, new precedence rules"
       drift_intensity: 0.5
     split_sizes:
-      train: 200
-      dev: 50
-      public_test: 100
-      private_test: 100
+      train: 1000
+      dev: 200
+      public_test: 200
+      private_test: 200
     generator_config:
       rule_types: [rename_field, remove_field, add_computed_field, filter_list, flatten_nested, conditional_transform, aggregate_values]
     metadata:
@@ -162,10 +162,10 @@ stages:
     drift:
       drift_type: none
     split_sizes:
-      train: 200
-      dev: 50
-      public_test: 100
-      private_test: 100
+      train: 1000
+      dev: 200
+      public_test: 200
+      private_test: 200
     generator_config:
       schema_family: employees
       query_types: [select, filter]
@@ -187,10 +187,10 @@ stages:
       drift_description: "Adds joins and aggregation"
       drift_intensity: 0.3
     split_sizes:
-      train: 200
-      dev: 50
-      public_test: 100
-      private_test: 100
+      train: 1000
+      dev: 200
+      public_test: 200
+      private_test: 200
     generator_config:
       schema_family: employees
       query_types: [select, filter, join, aggregate]
@@ -212,10 +212,10 @@ stages:
       drift_description: "Schema drift: renamed columns, new tables"
       drift_intensity: 0.5
     split_sizes:
-      train: 200
-      dev: 50
-      public_test: 100
-      private_test: 100
+      train: 1000
+      dev: 200
+      public_test: 200
+      private_test: 200
     generator_config:
       schema_family: employees_v2
       query_types: [select, filter, join, aggregate, subquery]
@@ -235,10 +235,10 @@ stages:
     drift:
       drift_type: none
     split_sizes:
-      train: 200
-      dev: 50
-      public_test: 100
-      private_test: 100
+      train: 1000
+      dev: 200
+      public_test: 200
+      private_test: 200
     generator_config:
       api_version: "1.0"
     metadata:
@@ -259,10 +259,10 @@ stages:
       drift_description: "Extended API surface with new functions"
       drift_intensity: 0.3
     split_sizes:
-      train: 200
-      dev: 50
-      public_test: 100
-      private_test: 100
+      train: 1000
+      dev: 200
+      public_test: 200
+      private_test: 200
     generator_config:
       api_version: "1.1"
     metadata:
@@ -283,10 +283,10 @@ stages:
       drift_description: "API behavior changes: different edge case handling"
       drift_intensity: 0.5
     split_sizes:
-      train: 200
-      dev: 50
-      public_test: 100
-      private_test: 100
+      train: 1000
+      dev: 200
+      public_test: 200
+      private_test: 200
     generator_config:
       api_version: "2.0"
     metadata:
