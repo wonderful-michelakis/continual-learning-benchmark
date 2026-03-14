@@ -1,0 +1,227 @@
+# Interleaved stream: alternates families across stages.
+# Creates a different interference profile than clustered.
+
+stream_id: v1_interleaved
+suite: v1
+description: >
+  Interleaved stream that alternates between task families.
+  This ordering creates continuous cross-family interference.
+
+stages:
+  - stage: 1
+    spec_id: "dsl_exec:v1:stage01"
+    family: dsl_exec
+    cluster_id: dsl_interleaved
+    difficulty:
+      level: 3
+      program_length: 4
+      nesting_depth: 1
+      operator_count: 4
+    drift:
+      drift_type: none
+    generator_config:
+      operators: [ADD, SUB, MUL, NEG]
+    metadata:
+      description: "DSL round 1"
+
+  - stage: 2
+    spec_id: "structured_transform:v1:stage02_il"
+    family: structured_transform
+    cluster_id: transform_interleaved
+    difficulty:
+      level: 3
+      schema_depth: 1
+      rule_count: 4
+    drift:
+      drift_type: none
+    generator_config:
+      rule_types: [rename_field, remove_field, add_computed_field, filter_list]
+    metadata:
+      description: "Transform round 1"
+
+  - stage: 3
+    spec_id: "sql_reasoning:v1:stage03_il"
+    family: sql_reasoning
+    cluster_id: sql_interleaved
+    difficulty:
+      level: 3
+      num_tables: 2
+      join_depth: 1
+      aggregation_complexity: 1
+    drift:
+      drift_type: none
+    generator_config:
+      schema_family: employees
+      query_types: [select, filter, join]
+    metadata:
+      description: "SQL round 1"
+
+  - stage: 4
+    spec_id: "api_code:v1:stage04_il"
+    family: api_code
+    cluster_id: api_interleaved
+    difficulty:
+      level: 3
+      function_count: 1
+      test_count: 4
+      api_surface_size: 4
+    drift:
+      drift_type: none
+    generator_config:
+      api_version: "1.0"
+    metadata:
+      description: "API code round 1"
+
+  - stage: 5
+    spec_id: "dsl_exec:v1:stage05_il"
+    family: dsl_exec
+    cluster_id: dsl_interleaved
+    difficulty:
+      level: 5
+      program_length: 6
+      nesting_depth: 2
+      operator_count: 6
+    drift:
+      drift_type: additive
+      drift_parent: "dsl_exec:v1:stage01"
+      drift_description: "Adds CLIP, MAX, MIN operators"
+      drift_intensity: 0.3
+    generator_config:
+      operators: [ADD, SUB, MUL, NEG, CLIP, MAX, MIN]
+    metadata:
+      description: "DSL round 2 with new operators"
+
+  - stage: 6
+    spec_id: "structured_transform:v1:stage06_il"
+    family: structured_transform
+    cluster_id: transform_interleaved
+    difficulty:
+      level: 5
+      schema_depth: 2
+      rule_count: 6
+    drift:
+      drift_type: additive
+      drift_parent: "structured_transform:v1:stage02_il"
+      drift_description: "Adds nested and conditional transforms"
+      drift_intensity: 0.3
+    generator_config:
+      rule_types: [rename_field, remove_field, add_computed_field, filter_list, flatten_nested, conditional_transform]
+    metadata:
+      description: "Transform round 2 with nesting"
+
+  - stage: 7
+    spec_id: "sql_reasoning:v1:stage07_il"
+    family: sql_reasoning
+    cluster_id: sql_interleaved
+    difficulty:
+      level: 5
+      num_tables: 3
+      join_depth: 2
+      aggregation_complexity: 2
+    drift:
+      drift_type: additive
+      drift_parent: "sql_reasoning:v1:stage03_il"
+      drift_description: "More tables, aggregation"
+      drift_intensity: 0.3
+    generator_config:
+      schema_family: employees
+      query_types: [select, filter, join, aggregate]
+    metadata:
+      description: "SQL round 2 with aggregation"
+
+  - stage: 8
+    spec_id: "api_code:v1:stage08_il"
+    family: api_code
+    cluster_id: api_interleaved
+    difficulty:
+      level: 5
+      function_count: 1
+      test_count: 6
+      api_surface_size: 5
+    drift:
+      drift_type: additive
+      drift_parent: "api_code:v1:stage04_il"
+      drift_description: "Extended API surface"
+      drift_intensity: 0.3
+    generator_config:
+      api_version: "1.1"
+    metadata:
+      description: "API code round 2"
+
+  - stage: 9
+    spec_id: "dsl_exec:v1:stage09_il"
+    family: dsl_exec
+    cluster_id: dsl_interleaved
+    difficulty:
+      level: 7
+      program_length: 8
+      nesting_depth: 3
+      operator_count: 8
+    drift:
+      drift_type: semantic
+      drift_parent: "dsl_exec:v1:stage05_il"
+      drift_description: "ADD becomes x+y+1"
+      drift_intensity: 0.5
+    generator_config:
+      operators: [ADD, SUB, MUL, NEG, CLIP, MAX, MIN, MOD]
+      semantic_overrides:
+        ADD: "x + y + 1"
+    metadata:
+      description: "DSL round 3 with semantic drift"
+
+  - stage: 10
+    spec_id: "structured_transform:v1:stage10_il"
+    family: structured_transform
+    cluster_id: transform_interleaved
+    difficulty:
+      level: 7
+      schema_depth: 3
+      rule_count: 8
+    drift:
+      drift_type: structural
+      drift_parent: "structured_transform:v1:stage06_il"
+      drift_description: "Schema structure changes"
+      drift_intensity: 0.5
+    generator_config:
+      rule_types: [rename_field, remove_field, add_computed_field, filter_list, flatten_nested, conditional_transform, aggregate_values, type_cast]
+    metadata:
+      description: "Transform round 3 with structural drift"
+
+  - stage: 11
+    spec_id: "sql_reasoning:v1:stage11_il"
+    family: sql_reasoning
+    cluster_id: sql_interleaved
+    difficulty:
+      level: 7
+      num_tables: 4
+      join_depth: 2
+      aggregation_complexity: 3
+    drift:
+      drift_type: structural
+      drift_parent: "sql_reasoning:v1:stage07_il"
+      drift_description: "Schema drift with renamed columns"
+      drift_intensity: 0.5
+    generator_config:
+      schema_family: employees_v2
+      query_types: [select, filter, join, aggregate, subquery]
+    metadata:
+      description: "SQL round 3 with schema drift"
+
+  - stage: 12
+    spec_id: "api_code:v1:stage12_il"
+    family: api_code
+    cluster_id: api_interleaved
+    difficulty:
+      level: 7
+      function_count: 2
+      test_count: 8
+      api_surface_size: 6
+    drift:
+      drift_type: semantic
+      drift_parent: "api_code:v1:stage08_il"
+      drift_description: "API behavior changes"
+      drift_intensity: 0.5
+    generator_config:
+      api_version: "2.0"
+    metadata:
+      description: "API code round 3 with semantic drift"

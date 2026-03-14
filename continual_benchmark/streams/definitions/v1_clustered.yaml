@@ -1,0 +1,293 @@
+# Clustered stream: tasks from similar families are grouped together.
+# DSL stages first, then Transform, then SQL, then API code.
+# Creates strong within-family adaptation and later cross-family forgetting.
+
+stream_id: v1_clustered
+suite: v1
+description: >
+  Clustered stream where task families are grouped together.
+  This ordering creates strong within-family adaptation followed by
+  cross-family forgetting when switching to a new family.
+
+stages:
+  # --- DSL Execution cluster (stages 1-3) ---
+  - stage: 1
+    spec_id: "dsl_exec:v1:stage01"
+    family: dsl_exec
+    cluster_id: dsl_basic
+    difficulty:
+      level: 2
+      program_length: 3
+      nesting_depth: 1
+      operator_count: 3
+    drift:
+      drift_type: none
+    split_sizes:
+      train: 200
+      dev: 50
+      public_test: 100
+      private_test: 100
+    generator_config:
+      operators: [ADD, SUB, MUL]
+    metadata:
+      description: "Basic DSL with arithmetic operators"
+
+  - stage: 2
+    spec_id: "dsl_exec:v1:stage02"
+    family: dsl_exec
+    cluster_id: dsl_basic
+    difficulty:
+      level: 4
+      program_length: 5
+      nesting_depth: 2
+      operator_count: 5
+    drift:
+      drift_type: additive
+      drift_parent: "dsl_exec:v1:stage01"
+      drift_description: "Adds CLIP and NEG operators"
+      drift_intensity: 0.3
+    split_sizes:
+      train: 200
+      dev: 50
+      public_test: 100
+      private_test: 100
+    generator_config:
+      operators: [ADD, SUB, MUL, CLIP, NEG]
+    metadata:
+      description: "Extended DSL with CLIP and NEG"
+
+  - stage: 3
+    spec_id: "dsl_exec:v1:stage03"
+    family: dsl_exec
+    cluster_id: dsl_basic
+    difficulty:
+      level: 6
+      program_length: 7
+      nesting_depth: 3
+      operator_count: 7
+    drift:
+      drift_type: semantic
+      drift_parent: "dsl_exec:v1:stage02"
+      drift_description: "ADD now returns x + y + 1 (offset drift)"
+      drift_intensity: 0.5
+    split_sizes:
+      train: 200
+      dev: 50
+      public_test: 100
+      private_test: 100
+    generator_config:
+      operators: [ADD, SUB, MUL, CLIP, NEG, MAX, MIN]
+      semantic_overrides:
+        ADD: "x + y + 1"
+    metadata:
+      description: "DSL with semantic drift on ADD operator"
+
+  # --- Structured Transform cluster (stages 4-6) ---
+  - stage: 4
+    spec_id: "structured_transform:v1:stage04"
+    family: structured_transform
+    cluster_id: transform_basic
+    difficulty:
+      level: 2
+      schema_depth: 1
+      rule_count: 3
+    drift:
+      drift_type: none
+    split_sizes:
+      train: 200
+      dev: 50
+      public_test: 100
+      private_test: 100
+    generator_config:
+      rule_types: [rename_field, remove_field, add_computed_field]
+    metadata:
+      description: "Basic field transformations"
+
+  - stage: 5
+    spec_id: "structured_transform:v1:stage05"
+    family: structured_transform
+    cluster_id: transform_basic
+    difficulty:
+      level: 4
+      schema_depth: 2
+      rule_count: 5
+    drift:
+      drift_type: additive
+      drift_parent: "structured_transform:v1:stage04"
+      drift_description: "Adds nested operations and list filtering"
+      drift_intensity: 0.3
+    split_sizes:
+      train: 200
+      dev: 50
+      public_test: 100
+      private_test: 100
+    generator_config:
+      rule_types: [rename_field, remove_field, add_computed_field, filter_list, flatten_nested]
+    metadata:
+      description: "Transform with nested operations"
+
+  - stage: 6
+    spec_id: "structured_transform:v1:stage06"
+    family: structured_transform
+    cluster_id: transform_basic
+    difficulty:
+      level: 6
+      schema_depth: 3
+      rule_count: 7
+    drift:
+      drift_type: structural
+      drift_parent: "structured_transform:v1:stage05"
+      drift_description: "Schema structure changes, new precedence rules"
+      drift_intensity: 0.5
+    split_sizes:
+      train: 200
+      dev: 50
+      public_test: 100
+      private_test: 100
+    generator_config:
+      rule_types: [rename_field, remove_field, add_computed_field, filter_list, flatten_nested, conditional_transform, aggregate_values]
+    metadata:
+      description: "Transform with structural drift and conditional rules"
+
+  # --- SQL Reasoning cluster (stages 7-9) ---
+  - stage: 7
+    spec_id: "sql_reasoning:v1:stage07"
+    family: sql_reasoning
+    cluster_id: sql_basic
+    difficulty:
+      level: 2
+      num_tables: 2
+      join_depth: 1
+      aggregation_complexity: 1
+    drift:
+      drift_type: none
+    split_sizes:
+      train: 200
+      dev: 50
+      public_test: 100
+      private_test: 100
+    generator_config:
+      schema_family: employees
+      query_types: [select, filter]
+    metadata:
+      description: "Basic SQL queries on simple schemas"
+
+  - stage: 8
+    spec_id: "sql_reasoning:v1:stage08"
+    family: sql_reasoning
+    cluster_id: sql_basic
+    difficulty:
+      level: 4
+      num_tables: 3
+      join_depth: 2
+      aggregation_complexity: 2
+    drift:
+      drift_type: additive
+      drift_parent: "sql_reasoning:v1:stage07"
+      drift_description: "Adds joins and aggregation"
+      drift_intensity: 0.3
+    split_sizes:
+      train: 200
+      dev: 50
+      public_test: 100
+      private_test: 100
+    generator_config:
+      schema_family: employees
+      query_types: [select, filter, join, aggregate]
+    metadata:
+      description: "SQL with joins and aggregation"
+
+  - stage: 9
+    spec_id: "sql_reasoning:v1:stage09"
+    family: sql_reasoning
+    cluster_id: sql_basic
+    difficulty:
+      level: 6
+      num_tables: 4
+      join_depth: 2
+      aggregation_complexity: 3
+    drift:
+      drift_type: structural
+      drift_parent: "sql_reasoning:v1:stage08"
+      drift_description: "Schema drift: renamed columns, new tables"
+      drift_intensity: 0.5
+    split_sizes:
+      train: 200
+      dev: 50
+      public_test: 100
+      private_test: 100
+    generator_config:
+      schema_family: employees_v2
+      query_types: [select, filter, join, aggregate, subquery]
+    metadata:
+      description: "SQL with schema drift and subqueries"
+
+  # --- API Code cluster (stages 10-12) ---
+  - stage: 10
+    spec_id: "api_code:v1:stage10"
+    family: api_code
+    cluster_id: api_basic
+    difficulty:
+      level: 2
+      function_count: 1
+      test_count: 3
+      api_surface_size: 3
+    drift:
+      drift_type: none
+    split_sizes:
+      train: 200
+      dev: 50
+      public_test: 100
+      private_test: 100
+    generator_config:
+      api_version: "1.0"
+    metadata:
+      description: "Basic API code generation"
+
+  - stage: 11
+    spec_id: "api_code:v1:stage11"
+    family: api_code
+    cluster_id: api_basic
+    difficulty:
+      level: 4
+      function_count: 1
+      test_count: 5
+      api_surface_size: 5
+    drift:
+      drift_type: additive
+      drift_parent: "api_code:v1:stage10"
+      drift_description: "Extended API surface with new functions"
+      drift_intensity: 0.3
+    split_sizes:
+      train: 200
+      dev: 50
+      public_test: 100
+      private_test: 100
+    generator_config:
+      api_version: "1.1"
+    metadata:
+      description: "Extended API with more functions"
+
+  - stage: 12
+    spec_id: "api_code:v1:stage12"
+    family: api_code
+    cluster_id: api_basic
+    difficulty:
+      level: 6
+      function_count: 2
+      test_count: 7
+      api_surface_size: 6
+    drift:
+      drift_type: semantic
+      drift_parent: "api_code:v1:stage11"
+      drift_description: "API behavior changes: different edge case handling"
+      drift_intensity: 0.5
+    split_sizes:
+      train: 200
+      dev: 50
+      public_test: 100
+      private_test: 100
+    generator_config:
+      api_version: "2.0"
+    metadata:
+      description: "API with semantic drift in function behavior"

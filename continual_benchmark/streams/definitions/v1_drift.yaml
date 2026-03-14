@@ -1,0 +1,310 @@
+# Drift-heavy stream: returns frequently to the same family with semantic drift.
+# Strongly stresses continual retention and adaptation under changing rules.
+
+stream_id: v1_drift
+suite: v1
+description: >
+  Drift-heavy stream that revisits families with increasing semantic drift.
+  Designed to strongly stress continual retention and adaptation.
+
+stages:
+  # --- Round 1: Baseline for all families ---
+  - stage: 1
+    spec_id: "dsl_exec:v1:drift_s01"
+    family: dsl_exec
+    cluster_id: dsl_drift
+    difficulty:
+      level: 3
+      program_length: 4
+      nesting_depth: 1
+      operator_count: 4
+    drift:
+      drift_type: none
+    generator_config:
+      operators: [ADD, SUB, MUL, NEG]
+    metadata:
+      description: "DSL baseline"
+
+  - stage: 2
+    spec_id: "structured_transform:v1:drift_s02"
+    family: structured_transform
+    cluster_id: transform_drift
+    difficulty:
+      level: 3
+      schema_depth: 1
+      rule_count: 4
+    drift:
+      drift_type: none
+    generator_config:
+      rule_types: [rename_field, remove_field, add_computed_field, filter_list]
+    metadata:
+      description: "Transform baseline"
+
+  - stage: 3
+    spec_id: "sql_reasoning:v1:drift_s03"
+    family: sql_reasoning
+    cluster_id: sql_drift
+    difficulty:
+      level: 3
+      num_tables: 2
+      join_depth: 1
+      aggregation_complexity: 1
+    drift:
+      drift_type: none
+    generator_config:
+      schema_family: employees
+      query_types: [select, filter, join]
+    metadata:
+      description: "SQL baseline"
+
+  - stage: 4
+    spec_id: "api_code:v1:drift_s04"
+    family: api_code
+    cluster_id: api_drift
+    difficulty:
+      level: 3
+      function_count: 1
+      test_count: 4
+      api_surface_size: 4
+    drift:
+      drift_type: none
+    generator_config:
+      api_version: "1.0"
+    metadata:
+      description: "API code baseline"
+
+  # --- Round 2: Mild drift ---
+  - stage: 5
+    spec_id: "dsl_exec:v1:drift_s05"
+    family: dsl_exec
+    cluster_id: dsl_drift
+    difficulty:
+      level: 4
+      program_length: 5
+      nesting_depth: 2
+      operator_count: 5
+    drift:
+      drift_type: semantic
+      drift_parent: "dsl_exec:v1:drift_s01"
+      drift_description: "ADD returns x + y + 1"
+      drift_intensity: 0.3
+    generator_config:
+      operators: [ADD, SUB, MUL, NEG, CLIP]
+      semantic_overrides:
+        ADD: "x + y + 1"
+    metadata:
+      description: "DSL mild semantic drift"
+
+  - stage: 6
+    spec_id: "structured_transform:v1:drift_s06"
+    family: structured_transform
+    cluster_id: transform_drift
+    difficulty:
+      level: 4
+      schema_depth: 2
+      rule_count: 5
+    drift:
+      drift_type: structural
+      drift_parent: "structured_transform:v1:drift_s02"
+      drift_description: "Changed rule precedence"
+      drift_intensity: 0.3
+    generator_config:
+      rule_types: [rename_field, remove_field, add_computed_field, filter_list, flatten_nested]
+    metadata:
+      description: "Transform mild structural drift"
+
+  - stage: 7
+    spec_id: "sql_reasoning:v1:drift_s07"
+    family: sql_reasoning
+    cluster_id: sql_drift
+    difficulty:
+      level: 4
+      num_tables: 3
+      join_depth: 2
+      aggregation_complexity: 2
+    drift:
+      drift_type: structural
+      drift_parent: "sql_reasoning:v1:drift_s03"
+      drift_description: "Added new table, renamed columns"
+      drift_intensity: 0.3
+    generator_config:
+      schema_family: employees
+      query_types: [select, filter, join, aggregate]
+    metadata:
+      description: "SQL mild schema drift"
+
+  - stage: 8
+    spec_id: "api_code:v1:drift_s08"
+    family: api_code
+    cluster_id: api_drift
+    difficulty:
+      level: 4
+      function_count: 1
+      test_count: 5
+      api_surface_size: 5
+    drift:
+      drift_type: semantic
+      drift_parent: "api_code:v1:drift_s04"
+      drift_description: "Changed edge case behavior"
+      drift_intensity: 0.3
+    generator_config:
+      api_version: "1.1"
+    metadata:
+      description: "API code mild semantic drift"
+
+  # --- Round 3: Strong drift ---
+  - stage: 9
+    spec_id: "dsl_exec:v1:drift_s09"
+    family: dsl_exec
+    cluster_id: dsl_drift
+    difficulty:
+      level: 6
+      program_length: 7
+      nesting_depth: 3
+      operator_count: 7
+    drift:
+      drift_type: semantic
+      drift_parent: "dsl_exec:v1:drift_s05"
+      drift_description: "MUL returns x*y + 1, ADD returns x+y+2"
+      drift_intensity: 0.7
+    generator_config:
+      operators: [ADD, SUB, MUL, NEG, CLIP, MAX, MIN]
+      semantic_overrides:
+        ADD: "x + y + 2"
+        MUL: "x * y + 1"
+    metadata:
+      description: "DSL strong semantic drift"
+
+  - stage: 10
+    spec_id: "structured_transform:v1:drift_s10"
+    family: structured_transform
+    cluster_id: transform_drift
+    difficulty:
+      level: 6
+      schema_depth: 3
+      rule_count: 7
+    drift:
+      drift_type: structural
+      drift_parent: "structured_transform:v1:drift_s06"
+      drift_description: "Major schema restructuring"
+      drift_intensity: 0.7
+    generator_config:
+      rule_types: [rename_field, remove_field, add_computed_field, filter_list, flatten_nested, conditional_transform, aggregate_values]
+    metadata:
+      description: "Transform strong structural drift"
+
+  - stage: 11
+    spec_id: "sql_reasoning:v1:drift_s11"
+    family: sql_reasoning
+    cluster_id: sql_drift
+    difficulty:
+      level: 6
+      num_tables: 4
+      join_depth: 2
+      aggregation_complexity: 3
+    drift:
+      drift_type: structural
+      drift_parent: "sql_reasoning:v1:drift_s07"
+      drift_description: "Major schema restructuring"
+      drift_intensity: 0.7
+    generator_config:
+      schema_family: employees_v2
+      query_types: [select, filter, join, aggregate, subquery]
+    metadata:
+      description: "SQL strong schema drift"
+
+  # --- Round 4: Return to near-original with maximum drift ---
+  - stage: 12
+    spec_id: "api_code:v1:drift_s12"
+    family: api_code
+    cluster_id: api_drift
+    difficulty:
+      level: 6
+      function_count: 2
+      test_count: 7
+      api_surface_size: 6
+    drift:
+      drift_type: semantic
+      drift_parent: "api_code:v1:drift_s08"
+      drift_description: "Major API behavior changes"
+      drift_intensity: 0.7
+    generator_config:
+      api_version: "2.0"
+    metadata:
+      description: "API code strong semantic drift"
+
+  - stage: 13
+    spec_id: "dsl_exec:v1:drift_s13"
+    family: dsl_exec
+    cluster_id: dsl_drift
+    difficulty:
+      level: 7
+      program_length: 8
+      nesting_depth: 3
+      operator_count: 8
+    drift:
+      drift_type: semantic
+      drift_parent: "dsl_exec:v1:drift_s09"
+      drift_description: "Operators revert to original semantics but with new operators"
+      drift_intensity: 0.9
+    generator_config:
+      operators: [ADD, SUB, MUL, NEG, CLIP, MAX, MIN, MOD, ABS]
+    metadata:
+      description: "DSL revert-drift: original semantics restored, new operators"
+
+  - stage: 14
+    spec_id: "structured_transform:v1:drift_s14"
+    family: structured_transform
+    cluster_id: transform_drift
+    difficulty:
+      level: 7
+      schema_depth: 3
+      rule_count: 8
+    drift:
+      drift_type: structural
+      drift_parent: "structured_transform:v1:drift_s10"
+      drift_description: "Schema reverts but with new rule types"
+      drift_intensity: 0.9
+    generator_config:
+      rule_types: [rename_field, remove_field, add_computed_field, filter_list, flatten_nested, conditional_transform, aggregate_values, type_cast]
+    metadata:
+      description: "Transform revert-drift with new rules"
+
+  - stage: 15
+    spec_id: "sql_reasoning:v1:drift_s15"
+    family: sql_reasoning
+    cluster_id: sql_drift
+    difficulty:
+      level: 7
+      num_tables: 4
+      join_depth: 3
+      aggregation_complexity: 3
+    drift:
+      drift_type: structural
+      drift_parent: "sql_reasoning:v1:drift_s11"
+      drift_description: "Schema reverts with added complexity"
+      drift_intensity: 0.9
+    generator_config:
+      schema_family: employees_v3
+      query_types: [select, filter, join, aggregate, subquery]
+    metadata:
+      description: "SQL revert-drift with complex queries"
+
+  - stage: 16
+    spec_id: "api_code:v1:drift_s16"
+    family: api_code
+    cluster_id: api_drift
+    difficulty:
+      level: 7
+      function_count: 2
+      test_count: 8
+      api_surface_size: 7
+    drift:
+      drift_type: semantic
+      drift_parent: "api_code:v1:drift_s12"
+      drift_description: "API reverts to near-original with extra constraints"
+      drift_intensity: 0.9
+    generator_config:
+      api_version: "3.0"
+    metadata:
+      description: "API code max drift"
